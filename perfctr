@@ -9,20 +9,28 @@
 #         perfctr 3 FLOPS_DP ./matmult 64
 #
 
+if [ "$1" = "-O" ]; then
+  OTIMIZA="-D_O_"  # Armazena o valor atual de $1 em OTIMIZA
+  shift  # Remove o valor que foi armazenado em OTIMIZA
+else
+  OTIMIZA=""  # Define OTIMIZA como vazio
+fi
+
 LIKWID_CMD="likwid-perfctr -C $1 -g $2 -m"
 
 # Caso esteja executando pelo perfctr, as CFLAGS também terão isso.
 CFLAGS="-I${LIKWID_HOME}/include -DLIKWID_PERFMON"
 
 CORE_ID=$1
+METRICA=$2
 
 echo "performance" > /sys/devices/system/cpu/cpufreq/policy${CORE_ID}/scaling_governor
 
 shift 2
 
-make purge CFLAGS="${CFLAGS}" matmult 
+make purge CFLAGS="${CFLAGS} ${OTIMIZA}" matmult 
 
-${LIKWID_CMD} $*
+${LIKWID_CMD} $* > ${METRICA}_${@: -1}.log
 
 echo "powersave" > /sys/devices/system/cpu/cpufreq/policy${CORE_ID}/scaling_governor
 

@@ -106,6 +106,64 @@ void multMatVet(MatRow mat, Vetor v, int m, int n, Vetor res) {
 }
 
 /**
+ *  Funcao multMatVetVetorizado:  Efetua multiplicacao entre matriz 'mxn' por vetor de 'n' elementos, com vetorização usando unroll & jam + blocking
+ *  @param mat matriz 'mxn'
+ *  @param m número de linhas da matriz
+ *  @param n número de colunas da matriz
+ *  @param res vetor que guarda o resultado. Deve estar previamente alocado e com
+ *             seus elementos inicializados em 0.0 (zero)
+ *  @return vetor de 'm' elementos
+ *
+ */
+void multMatVetVetorizado(MatRow restrict mat, Vetor restrict v, int m, int n, Vetor restrict res) {
+	/* Efetua a multiplicação */
+	if(!res)
+		return;
+
+	// l para linha
+	// c para coluna
+	// k para posição do vetor
+	int l_inicioBloco = 0, l_fimBloco = 0, c_inicioBloco = 0, c_fimBloco = 0;
+	// Se não, não cabe só na L1, é realizado o unroll & jam + blocking
+	for(int iBloco = 0; iBloco < m / BLOCK_SIZE; iBloco++) {
+		l_inicioBloco = BLOCK_SIZE * iBloco;
+		l_fimBloco = BLOCK_SIZE + l_inicioBloco;
+
+		for(int jBloco = 0; jBloco < n / BLOCK_SIZE; jBloco++) {
+			c_inicioBloco = BLOCK_SIZE * jBloco;
+			c_fimBloco = BLOCK_SIZE + c_inicioBloco;
+
+			for(int i = l_inicioBloco; i < l_fimBloco; i += 4)
+				for(int j = c_inicioBloco; j < c_fimBloco; j++) {
+					res[i] += mat[(i * n) + j] * v[j];
+					res[i+1] += mat[((i + 1) * n) + j] * v[j];
+					res[i+2] += mat[((i + 2) * n) + j] * v[j];
+					res[i+3] += mat[((i + 3) * n) + j] * v[j];
+				}
+		}
+	}
+
+	// Caso os blocos estejam divididos sem problemas.
+	if(m % BLOCK_SIZE == 0)
+		return;
+	
+	// Realiza para o resto abaixo, ou seja, a partir de m - m mod BLOCK_SIZE
+	for(int i = m - (m % BLOCK_SIZE); i < m; i++) {
+		// Executa para todas as colunas.
+		for(int j = 0; j < n; j++) {
+			res[i] += mat[(i * n) + j] * v[j];
+		}
+	}
+	// Realiza para o resto a direita, ou seja, a partir de n - n mod BLOCK_SIZE
+	for(int i = 0; i < n - (n % BLOCK_SIZE); i++) {
+		// Executa para as colunas que estão apos os blocos.
+		for(int j = n - (n % BLOCK_SIZE); j < n; j++) {
+			res[i] += mat[(i * n) + j] * v[j];
+		}
+	}
+}
+
+/**
  *  Funcao multMatMat: Efetua multiplicacao de duas matrizes 'n x n'
  *  @param A matriz 'n x n'
  *  @param B matriz 'n x n'

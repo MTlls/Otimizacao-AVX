@@ -1,17 +1,17 @@
 # PROGRAMA
         PROG = matmult
-        OBJS = $(PROG).o matriz.o
+        OBJS = $(PROG).o matriz.o utils.o
 
 # Compilador
 	CC = gcc -Wall
-	override CFLAGS += -Wall -g -O3 -mavx -march=native -I${LIKWID_HOME}/include
+	override CFLAGS += -Wall -O3 -mavx -march=native -I${LIKWID_HOME}/include
 	LFLAGS = -lm -L${LIKWID_HOME}/lib -llikwid
 
 # Lista de arquivos para distribuição
 DISTFILES = *.c *.h README.md Makefile perfctr
 DISTDIR = `basename ${PWD}`
 
-.PHONY: all debug clean purge dist
+.PHONY: all debug clean purge dist otimiza
 
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $<
@@ -19,7 +19,10 @@ DISTDIR = `basename ${PWD}`
 all: $(PROG)
 
 debug: CFLAGS += -g -D_DEBUG_
-debug: $(PROG)
+debug: all
+
+otimiza: CFLAGS += -D_O_
+otimiza: all
 
 $(PROG): $(OBJS) 
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
@@ -30,7 +33,7 @@ clean:
 
 purge: clean
 	@echo "Faxina ...."
-	@rm -f  $(PROG) *.o a.out $(DISTDIR) $(DISTDIR).tar
+	@rm -f  $(PROG) *.o *.out a.out $(DISTDIR) $(DISTDIR).tar
 	@rm -f *.png marker.out
 
 dist: purge
