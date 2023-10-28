@@ -14,5 +14,5 @@ metricas["TEMPO"]="Tempo em milisegundos"
 for metrica in "${!metricas[@]}"
 do
     campo="${metricas[$metrica]}"
-    gnuplot -c plotMetrica.gp "${metrica}" "${campo}"
+    gnuplot -geometry -800-600 -c plotMetrica.gp "${metrica}" "${campo}"
 done

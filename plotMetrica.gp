@@ -9,7 +9,7 @@ set style line 1 lc 3 pt 7 ps 0.3
 set boxwidth 1
 set xtics
 set xrange ["0":]
-set xlabel  "N (bytes)"
+set xlabel  "Tamanho do vetor"
 
 #
 # Tabelas em arquivos separados (2 colunas)

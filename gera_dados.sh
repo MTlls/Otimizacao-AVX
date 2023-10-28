@@ -17,7 +17,7 @@ TAMANHOS=(0 64 100 128 200 256 512 600 900 1024 2000 2048 3000 4000)
 declare -A metricas
 
 if [ "$1" = "-O" ]; then
-    OTIMIZA="Otimizado-"  # Armazena o valor atual de $1 em OTIMIZA
+    OTIMIZA="-D_O_"  # Armazena o valor atual de $1 em OTIMIZA
     TIPO="(com otimização)" # Coluna do .dat terá o seguinte nome
 else
     OTIMIZA=""  # Define OTIMIZA como vazio
@@ -28,8 +28,11 @@ fi
 echo "# Marcador \"matRowVet\" <TEMPO>" > "${DAT_DIR}plot-${OTIMIZA}TEMPO-MatVet.dat"
 echo "# n TEMPO_MEDIO $TIPO" >> "${DAT_DIR}plot-${OTIMIZA}TEMPO-MatVet.dat"
 
+make purge CFLAGS="${CFLAGS} ${OTIMIZA}" matmult 
+
 for k in $METRICA
 do
+    # Definição do nome arquivo que será plotado.
     ARQUIVO_PLOT="${DAT_DIR}plot-${OTIMIZA}${k}-MatVet.dat"
     # Coloca nos arquivos .dat o "cabeçalho" deles
     echo "# Marcador \"matRowVet\" <$k>" > ${ARQUIVO_PLOT}
@@ -40,11 +43,11 @@ do
     else
         echo "# n <$k> $TIPO" >> ${ARQUIVO_PLOT}
     fi
-    
 
     # Cada teste deve ser executado para os seguintes tamanhos de matriz:  N={64, 100, 128, 200, 256, 512, 600, 900, 1024, 2000, 2048, 3000, 4000};        
     for n in "${TAMANHOS[@]}"
-        do
+    do
+        ARQ_LOGS="${LOGS_DIR}${k}_${n}.log"
         # Adicione os parâmetros chave-valor
         case $k in
             ENERGY)
@@ -57,38 +60,38 @@ do
         esac
         
         # Execução do código com a métrica
-        ./perfctr $1 ${CPU} ${k} ${PROGRAM} ${n}
+        ./perfctr ${CPU} ${k} ${PROGRAM} ${n}
         
+        # Informações para acompanhar a execução
+        echo
+        echo "[${k}] Calculando para tamanho" "${n}"
+
         if [ "$k" == "FLOPS_DP" ]; then
             # Extrai o campo DP MFLOP/s e AVX DP MFLOPS/s dos logs do grupo FLOPS_DP
             # Para o marcador (MAT_VET)
-            flops=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: FLOPS_DP/" ${LOGS_DIR}${k}_${n}.log | grep -E 'DP \[?MFLOP/s\]?' | sed 's/ //g' | cut -d '|' -f 3)
+            flops=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: FLOPS_DP/" ${ARQ_LOGS} | grep -E 'DP \[?MFLOP/s\]?' | sed 's/ //g' | cut -d '|' -f 3)
 
             # Extrai os respectivos campos
             dp=$(echo "$flops" | sed -n '1p')
             avx=$(echo "$flops" | sed -n '2p')
 
-            echo "METRICA [$k]: " "$dp"
-            echo "METRICA [AVX $k]: " "$avx"
+            echo "[$k (MFLOP/s)]:" "$dp"
+            echo "[AVX $k (MFLOP/s)]:" "$avx"
 
             # escreve no .dat para futura plotagem
             echo "$n ${dp} ${avx}" >> ${ARQUIVO_PLOT}
         else
             # Para o marcador (MAT_VET)
-            metricas["$k"]=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: ${k}/" ${LOGS_DIR}${k}_${n}.log | grep -E "${metricas[$k]}" | sed 's/ //g' | cut -d '|' -f 3)
-            
-            echo "METRICA [$k]: " ${metricas[$k]}
+            campo=${metricas[$k]}
+            metricas["$k"]=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: ${k}/" ${ARQ_LOGS} | grep -E "${metricas[$k]}" | sed 's/ //g' | cut -d '|' -f 3)
+
+            # dependendo do campo ele terá umas '/' mas é esperado
+            echo "[${campo}]: " ${metricas[$k]}
 
             # escreve no .dat para futura plotagem
             echo "$n ${metricas[$k]}" >> ${ARQUIVO_PLOT}
         fi
     done
-done
-
-
-for n in "${TAMANHOS[@]}"
-do
-    captura_tempo "$n"
 done
 
 captura_tempo(){
@@ -106,3 +109,8 @@ captura_tempo(){
 
     echo "${tamanho} ${tempo} " >> ${ARQUIVO_PLOT}
 }
+
+for n in "${TAMANHOS[@]}"
+do
+    captura_tempo "$n"
+done
