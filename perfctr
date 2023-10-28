@@ -23,14 +23,14 @@ CFLAGS="-I${LIKWID_HOME}/include -DLIKWID_PERFMON"
 
 CORE_ID=$1
 METRICA=$2
-
+LOGS_DIR=./logs/
 echo "performance" > /sys/devices/system/cpu/cpufreq/policy${CORE_ID}/scaling_governor
 
 shift 2
 
 make purge CFLAGS="${CFLAGS} ${OTIMIZA}" matmult 
 
-${LIKWID_CMD} $* > ${METRICA}_${@: -1}.log
+${LIKWID_CMD} $* > ${LOGS_DIR}${METRICA}_${@: -1}.log
 
 echo "powersave" > /sys/devices/system/cpu/cpufreq/policy${CORE_ID}/scaling_governor
 

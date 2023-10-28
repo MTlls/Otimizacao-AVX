@@ -1,5 +1,5 @@
 #!/bin/bash
-METRICA="FLOPS_DP ENERGY L2CACHE MEM"
+METRICA="FLOPS_DP ENERGY L2CACHE L3"
 CPU=3
 
 LIKWID_HOME=/home/soft/likwid
@@ -8,8 +8,10 @@ CFLAGS="-I${LIKWID_HOME}/include -DLIKWID_PERFMON"
 PROGRAM="./matmult"
 MAKEFILE="make"
 PURGE="purge"
+DAT_DIR="./dados_grafico/"
+LOGS_DIR="./logs/"
 
-TAMANHOS=(0 64, 100, 128, 200, 256, 512, 600, 900)
+TAMANHOS=(0 64 100 128 200 256 512 600 900 1024 2000 2048 3000 4000)
 
 # É um vetor chave-valor associativo, para capturar os campos sem muito código, não foi feito para DP FLOPS e AVX FLOPS pois é diferente o processo para captura-lo
 declare -A metricas
@@ -23,12 +25,12 @@ else
 fi
 
 # começa a escrever para a metrica de tempo
-echo "# Marcador \"matRowVet\" <TEMPO>" > "plot-${OTIMIZA}TEMPO-MatVet.dat"
-echo "# n TEMPO_MEDIO $TIPO">> "plot-${OTIMIZA}TEMPO-MatVet.dat"
+echo "# Marcador \"matRowVet\" <TEMPO>" > "${DAT_DIR}plot-${OTIMIZA}TEMPO-MatVet.dat"
+echo "# n TEMPO_MEDIO $TIPO" >> "${DAT_DIR}plot-${OTIMIZA}TEMPO-MatVet.dat"
 
 for k in $METRICA
 do
-    ARQUIVO_PLOT="plot-${OTIMIZA}${k}-MatVet.dat"
+    ARQUIVO_PLOT="${DAT_DIR}plot-${OTIMIZA}${k}-MatVet.dat"
     # Coloca nos arquivos .dat o "cabeçalho" deles
     echo "# Marcador \"matRowVet\" <$k>" > ${ARQUIVO_PLOT}
 
@@ -47,8 +49,8 @@ do
         case $k in
             ENERGY)
             metricas["$k"]="Energy \[J\]";;
-            MEM)
-            metricas["$k"]="Memory bandwidth \[MBytes/s\]";;
+            L3)
+            metricas["$k"]="L3 bandwidth \[MBytes/s\]";;
             L2CACHE)
             metricas["$k"]="L2 miss ratio";;
             *)
@@ -60,7 +62,7 @@ do
         if [ "$k" == "FLOPS_DP" ]; then
             # Extrai o campo DP MFLOP/s e AVX DP MFLOPS/s dos logs do grupo FLOPS_DP
             # Para o marcador (MAT_VET)
-            flops=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: FLOPS_DP/" ${k}_${n}.log | grep -E 'DP \[?MFLOP/s\]?' | sed 's/ //g' | cut -d '|' -f 3)
+            flops=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: FLOPS_DP/" ${LOGS_DIR}${k}_${n}.log | grep -E 'DP \[?MFLOP/s\]?' | sed 's/ //g' | cut -d '|' -f 3)
 
             # Extrai os respectivos campos
             dp=$(echo "$flops" | sed -n '1p')
@@ -73,7 +75,7 @@ do
             echo "$n ${dp} ${avx}" >> ${ARQUIVO_PLOT}
         else
             # Para o marcador (MAT_VET)
-            metricas["$k"]=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: ${k}/" ${k}_${n}.log | grep -E "${metricas[$k]}" | sed 's/ //g' | cut -d '|' -f 3)
+            metricas["$k"]=$(awk "/Region MAT_VET, Group 1: ${k}/,/Region MAT_MAT, Group 1: ${k}/" ${LOGS_DIR}${k}_${n}.log | grep -E "${metricas[$k]}" | sed 's/ //g' | cut -d '|' -f 3)
             
             echo "METRICA [$k]: " ${metricas[$k]}
 
@@ -90,8 +92,8 @@ do
 done
 
 captura_tempo(){
-    ARQUIVO_FLOPS=FLOPS_DP_$1.log
-    ARQUIVO_PLOT="plot-${OTIMIZA}TEMPO-MatVet.dat"
+    ARQUIVO_FLOPS="${LOGS_DIR}FLOPS_DP_$1.log"
+    ARQUIVO_PLOT="${DAT_DIR}plot-${OTIMIZA}TEMPO-MatVet.dat"
     
     # Criação do .dat de tempo precisa que seja feito para cada tamanho
     # Utilizado o FLOPS_DP.log como fonte mas podia ser o ENERGY.log
