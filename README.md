@@ -8,13 +8,16 @@ caso queira rodar apenas um comando, utilize
 ```
 
 ### formato de entrada
-
+```bash
     source ./gera_dados.sh -O
     source ./gera_dados.sh
+```
 -O, para realizar os cálculos com otimização, é esperado que seja realizado os dois comandos, para não haver problemas na plotagem dos gráficos
 ### plotagem de graficos
 ###
+```bash
     source ./plotador.sh
+```
 Vai ser gerado para cada métrica um gráfico, com o eixo Y sendo o campo que foi solicitado no trabalho.
 
 
