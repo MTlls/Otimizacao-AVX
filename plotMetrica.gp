@@ -24,8 +24,11 @@ set logscale y
 metrica = ARG1
 
 # Define o nome do arquivo .dat
-com_otimizacao = sprintf("./%s/plot-%s-%s-MatVet.dat", "dados_grafico", "Otimizado", metrica)
-sem_otimizacao = sprintf("./%s/plot-%s-MatVet.dat", "dados_grafico", metrica)
+mat_vet_otimizado = sprintf("./%s/plot-%s-%s-MatVet.dat", "dados_grafico", "Otimizado", metrica)
+mat_vet_nao_otimizado = sprintf("./%s/plot-%s-MatVet.dat", "dados_grafico", metrica)
+mat_mat_otimizado = sprintf("./%s/plot-%s-MatMat.dat", "dados_grafico", metrica)
+mat_mat_nao_otimizado = sprintf("./%s/plot-%s-MatMat.dat", "dados_grafico", metrica)
+
 
 # Define o título do gráfico
 titulo = metrica
@@ -38,8 +41,8 @@ if(metrica ne "FLOPS_DP"){
 
      # Plot dos dados
      set terminal qt 1 title "Métrica <" . metrica . ">[matriz * vetor]"
-     plot sem_otimizacao title "(sem otimização)" with lines lt 1, \
-     com_otimizacao title "(com otimização)" with lines lt 2
+     plot   mat_vet_nao_otimizado title "(mat-vet sem otimização)" with lines lt 1, \
+            mat_vet_otimizado title "(com otimização)" with lines lt 2
      pause -1
 } else{
      # Definindo os estilos de linha e cores
@@ -50,9 +53,13 @@ if(metrica ne "FLOPS_DP"){
 
      #Plot dos dados
      set terminal qt 1 title "Métrica <" . metrica . ">[matriz * vetor]"
-     plot sem_otimizacao using 1:2 title "Cálculos DP (sem otimização)" with linespoints lt 1, \
-     sem_otimizacao using 1:3 title "Cálculos DP vetorizados (sem otimização)" with linespoints lt 2, \
-     com_otimizacao using 1:2 title "Cálculos DP (com otimização)" with linespoints lt 3, \
-     com_otimizacao using 1:3 title "Cálculos DP vetorizados (com otimização)" with linespoints lt 4
+     plot mat_vet_nao_otimizado using 1:2 title "Cálculos DP (sem otimização)" with linespoints lt 1, \
+     mat_vet_nao_otimizado using 1:3 title "Cálculos DP vetorizados (sem otimização)" with linespoints lt 2, \
+     mat_vet_otimizado using 1:2 title "Cálculos DP (com otimização)" with linespoints lt 3, \
+     mat_vet_otimizado using 1:3 title "Cálculos DP vetorizados (com otimização)" with linespoints lt 4
+     mat_mat_nao_otimizado using 1:2 title "Seu terceiro conjunto de dados" with linespoints lt 5, \
+     mat_mat_nao_otimizado using 1:2 title "Seu terceiro conjunto de dados" with linespoints lt 5, \
+     mat_mat_otimizado using 1:2 title "Seu quarto conjunto de dados" with linespoints lt 6
+     mat_mat_otimizado using 1:2 title "Seu quarto conjunto de dados" with linespoints lt 6
      pause -1
 }

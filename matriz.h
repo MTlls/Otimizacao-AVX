@@ -10,6 +10,7 @@
 
 // Usamos o line cache size como 64 bytes (8 doubles)
 #define BLOCK_SIZE 8
+#define UNROLL 4
 
 /* Tipos para matrizes e vetores */
 
@@ -29,6 +30,8 @@ void zeraVetor(Vetor vet, int n);
 void multMatVet(MatRow mat, Vetor v, int m, int n, Vetor res);
 void multMatVetVetorizado(MatRow restrict mat, Vetor restrict v, int m, int n, Vetor restrict res);
 void multMatMat(MatRow A, MatRow B, int n, MatRow C);
+void mulMatMatOtim(MatRow restrict A, MatRow restrict B, int n, MatRow restrict C);
+
 
 void prnMat(MatRow mat, int m, int n);
 void prnVetor(Vetor vet, int n);
