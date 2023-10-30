@@ -124,6 +124,7 @@ void multMatVetVetorizado(MatRow restrict mat, Vetor restrict v, int m, int n, V
     // c para coluna
     // k para posição do vetor
     int l_inicioBloco = 0, l_fimBloco = 0, c_inicioBloco = 0, c_fimBloco = 0;
+	int linha_I0 = 0;
     // Se não, não cabe só na L1, é realizado o unroll & jam + blocking
     for (int iBloco = 0; iBloco < m / BLOCK_SIZE; iBloco++) {
         l_inicioBloco = BLOCK_SIZE * iBloco;
@@ -133,13 +134,17 @@ void multMatVetVetorizado(MatRow restrict mat, Vetor restrict v, int m, int n, V
             c_inicioBloco = BLOCK_SIZE * jBloco;
             c_fimBloco = BLOCK_SIZE + c_inicioBloco;
 
-            for (int i = l_inicioBloco; i < l_fimBloco; i += 4)
-                for (int j = c_inicioBloco; j < c_fimBloco; j++) {
-                    res[i] += mat[(i * n) + j] * v[j];
-                    res[i + 1] += mat[((i + 1) * n) + j] * v[j];
-                    res[i + 2] += mat[((i + 2) * n) + j] * v[j];
-                    res[i + 3] += mat[((i + 3) * n) + j] * v[j];
+            for (int i = l_inicioBloco; i < l_fimBloco; i += UNROLL) {
+				// Para evitar recálculos, já que é (i + UNROLL) * n, executando apenas UMA multiplicação, ao invés de 4
+				linha_I0 = (i * n);
+
+				for (int j = c_inicioBloco; j < c_fimBloco; j++) {
+                    res[i] += mat[linha_I0 + j] * v[j];
+                    res[i + 1] += mat[linha_I0 + n + j] * v[j];
+					res[i + 2] += mat[linha_I0 + n + n + j] * v[j];
+                    res[i + 3] += mat[linha_I0 + n + n + n + j] * v[j];
                 }
+			}
         }
     }
 
@@ -180,34 +185,58 @@ void multMatMat(MatRow A, MatRow B, int n, MatRow C) {
                 C[i * n + j] += A[i * n + k] * B[k * n + j];
 }
 
-void mulMatMatOtim(MatRow restrict A, MatRow restrict B, int n, MatRow restrict C) {
-    int istart, iend;
-    int jstart, jend;
+/**
+ *  Funcao multMatMatVetorizado:  Efetua multiplicacao entre matriz 'mxn' por outra matriz 'mxn', com vetorização usando unroll & jam + blocking
+ *  @param A matriz 'n x n'
+ *  @param B matriz 'n x n'
+ *  @param n ordem da matriz quadrada
+ *  @param C   matriz que guarda o resultado. Deve ser previamente gerada com 'geraMatPtr()'
+ *             e com seus elementos inicializados em 0.0 (zero)
+ *
+ */
+void multMatMatVetorizado(MatRow restrict A, MatRow restrict B, int n, MatRow restrict C) {
+    int l_inicioBloco, l_fimBloco;
+    int c_inicioBloco, c_fimBloco;
     int kstart, kend;
-    for (int ii = 0; ii < n / BLOCK_SIZE; ++ii) {
-        istart = ii * BLOCK_SIZE;
-        iend = istart + BLOCK_SIZE;
-        for (int jj = 0; jj < n / BLOCK_SIZE; ++jj) {
-            jstart = jj * BLOCK_SIZE;
-            jend = jstart + BLOCK_SIZE;
+	int indice_A = 0, indice_B = 0, indice_C = 0;
+
+    for (int iBloco = 0; iBloco < n / BLOCK_SIZE; ++iBloco) {
+        l_inicioBloco = iBloco * BLOCK_SIZE;
+        l_fimBloco = l_inicioBloco + BLOCK_SIZE;
+
+        for (int jBloco = 0; jBloco < n / BLOCK_SIZE; ++jBloco) {
+            c_inicioBloco = jBloco * BLOCK_SIZE;
+            c_fimBloco = c_inicioBloco + BLOCK_SIZE;
+
             for (int kk = 0; kk < n / BLOCK_SIZE; ++kk) {
                 kstart = kk * BLOCK_SIZE;
                 kend = kstart + BLOCK_SIZE;
-                for (int i = istart; i < iend; ++i) {
-                    for (int j = jstart; j < jend; j += UNROLL) {
-                        for (int k = kstart; k < kend; ++k) {
-                            for (int l = 0; l < UNROLL; ++l) {
-                                C[i * n + j + l] += A[i * n + k] * B[k * n + j + l];
-                            }
-                        }
-                    }
-                }
+
+                for (int i = l_inicioBloco; i < l_fimBloco; ++i) {
+					for(int j = c_inicioBloco; j < c_fimBloco; j += UNROLL) {
+						// Para evitar recálculos, aproveitando o fato de que são loops aninhados
+						indice_C =  i * n + j;
+
+						for (int k = kstart; k < kend; ++k) {
+							// Para evitar recálculos
+							indice_A = (indice_C - j) + k;
+							indice_B = (k * n) + j;
+							C[indice_C + 0] += A[indice_A] * B[indice_B + 0];
+							C[indice_C + 1] += A[indice_A] * B[indice_B + 1];
+							C[indice_C + 2] += A[indice_A] * B[indice_B + 2];
+							C[indice_C + 3] += A[indice_A] * B[indice_B + 3];
+						}
+					}
+				}
             }
         }
     }
+
+	// Caso não sobre nada, não tem o que fazer né?
     if (n % BLOCK_SIZE == 0)
         return;
 
+	// Realiza para o resto
     for (int i = 0; i < n; ++i)
         for (int j = 0; j < n; ++j)
             for (int k = 0; k < n; ++k)

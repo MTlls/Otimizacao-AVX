@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 #ifndef _O_
     multMatMat(mRow_1, mRow_2, n, resMat);
 #else
-    mulMatMatOtim(mRow_1, mRow_2, n, resMat);
+    multMatMatVetorizado(mRow_1, mRow_2, n, resMat);
 #endif
 
     tempo = timestamp() - tempo;

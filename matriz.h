@@ -30,7 +30,7 @@ void zeraVetor(Vetor vet, int n);
 void multMatVet(MatRow mat, Vetor v, int m, int n, Vetor res);
 void multMatVetVetorizado(MatRow restrict mat, Vetor restrict v, int m, int n, Vetor restrict res);
 void multMatMat(MatRow A, MatRow B, int n, MatRow C);
-void mulMatMatOtim(MatRow restrict A, MatRow restrict B, int n, MatRow restrict C);
+void multMatMatVetorizado(MatRow restrict A, MatRow restrict B, int n, MatRow restrict C);
 
 
 void prnMat(MatRow mat, int m, int n);

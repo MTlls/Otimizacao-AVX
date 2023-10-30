@@ -23,4 +23,4 @@ Vai ser gerado para cada métrica um gráfico, com o eixo Y sendo o campo que fo
 
 ## erros ou problemas encontrados
 
-a desenvolver.
+Não foi encontrado algum problema visível aos alunos.
